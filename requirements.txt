@@ -1,0 +1,9 @@
+fastapi>=0.110.0
+uvicorn[standard]
+mcp>=1.0.0                 # The official SDK (includes FastMCP 1.0)
+google-generativeai        # Gemini
+pymongo[srv]               # MongoDB
+requests                   # Brave Search
+python-dotenv              # API Keys
+boto3                      # AWS SDK
+networkx                   # Graph Logic
