@@ -5,3 +5,4 @@ venv/
 *.pyo
 *.pyd
 .DS_Store
+.vscode/
