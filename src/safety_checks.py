@@ -7,34 +7,45 @@ class DependencyGraph:
     def build_graph(self, resources: list):
         """
         Converts Terraform resources into a Directed Graph.
+        Now uses dynamic reference parsing instead of hardcoded strings.
         """
         self.graph.clear()
-        
+
         # 1. Add Nodes
         for r in resources:
             self.graph.add_node(r['id'], type=r['type'])
 
-        # 2. Add Edges (The Logic)
-        # If we see an attachment, we link Volume -> Instance
+        # 2. Add Edges (Dynamic Logic)
         for r in resources:
             if r['type'] == "aws_volume_attachment":
-                # Hardcoded detection for the demo file
-                instance_node = "aws_instance.app_server_dev"
-                volume_node = "aws_ebs_volume.app_data"
-                
-                if self.graph.has_node(instance_node) and self.graph.has_node(volume_node):
-                    # Edge means: Volume DEPENDS ON Instance
-                    self.graph.add_edge(volume_node, instance_node, relationship="attached_to")
+                props = r.get('properties', {})
 
-    def check_impact(self, resource_id: str, action: str) -> str:
+                # Retrieve the refs we extracted in terraform_ops.py
+                # e.g., "aws_instance.app_server_dev"
+                instance_node = props.get("instance_ref")
+                volume_node = props.get("volume_ref")
+
+                if instance_node and volume_node:
+                    if self.graph.has_node(instance_node) and self.graph.has_node(volume_node):
+                        # CORRECTED DEPENDENCY: The attachment depends on the instance and the volume.
+                        # Edge: Attachment -> Instance
+                        self.graph.add_edge(r['id'], instance_node, relationship="attaches_to")
+                        # Edge: Attachment -> Volume
+                        self.graph.add_edge(r['id'], volume_node, relationship="attaches_to")
+
+    def check_impact(self, node_id: str, action: str):
         """
-        Returns a warning if dependencies exist.
+        Checks the impact of an action on a node.
         """
-        if action in ["DELETE", "DOWNSIZE"]:
-            # Check if anyone depends on this resource
-            dependents = list(self.graph.predecessors(resource_id))
-            if dependents:
-                return f"⚠️ BLOCKED: Cannot {action} {resource_id}. It is a dependency for: {dependents}"
-        
-        return "✅ SAFE: No critical dependencies found."
-        
+        if not self.graph.has_node(node_id):
+            return f"Node '{node_id}' not in graph."
+
+        if action.upper() == "DELETE":
+            # Find nodes that depend on this one (predecessors in a "depends-on" graph)
+            dependents = list(self.graph.predecessors(node_id))
+            if not dependents:
+                return "✅ OK: No resources depend on this node."
+            else:
+                return f"🚨 WARNING: Deleting this will impact {len(dependents)} other resources: {', '.join(dependents)}"
+
+        return "Action not implemented."
