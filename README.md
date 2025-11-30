@@ -84,7 +84,7 @@ cd unico-finops-mcp
 ```Bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 **3.Configure Environment**
 **Create a `.env` file:**
@@ -95,8 +95,9 @@ MONGODB_URI=your_mongo_uri
 **4. Run the Demo**
 Run the simulation script to see the Graph Safety Guard in action:
 ```Bash
-python test_demo.py
+./venv/bin/python3 test_demo.py
 ```
+> **Note:** We use `./venv/bin/python3` to ensure we are using the Python 3 interpreter from our virtual environment, which has the correct dependencies installed. Some system configurations may not automatically use the virtual environment's Python even when it's activated.
 
 ---
 📜 License
